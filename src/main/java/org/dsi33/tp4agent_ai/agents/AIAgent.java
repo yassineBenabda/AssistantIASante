@@ -12,24 +12,35 @@ import org.dsi33.tp4agent_ai.tools.AgentTools;
 
 @Service
 public class AIAgent {
-	private ChatClient chatClient;
 
-	public AIAgent(ChatClient.Builder chatClient, ChatMemory chatMemory,AgentTools agentTools,ToolCallbackProvider callbackProvider, VectorStore vectorStore) {
-		super();
-		this.chatClient = chatClient
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+    private final ChatClient chatClient;
+
+    public AIAgent(ChatClient.Builder chatClient,
+                   ChatMemory chatMemory,
+                   AgentTools agentTools,
+                   ToolCallbackProvider callbackProvider,
+                   VectorStore vectorStore) {
+
+        this.chatClient = chatClient
+                .defaultAdvisors(
+                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                        new QuestionAnswerAdvisor(vectorStore)
+                )
                 .defaultToolCallbacks(callbackProvider)
                 .defaultTools(agentTools)
-                //.defaultAdvisors(new QuestionAnswerAdvisor(vectorStore))
                 .build();
-	}
-	
-	public String onQuery(String query) {
-		return chatClient.prompt()
+    }
+
+    public String onQuery(String query) {
+        return chatClient.prompt()
+                .system("""
+                        Tu es un assistant IA spécialisé en santé.
+                        - Ne donne jamais de diagnostic médical définitif.
+                        - Réponds avec un langage simple et clair.
+                        - Conseille toujours de consulter un médecin si nécessaire.
+                """)
                 .user(query)
                 .call()
                 .content();
-		
-	}
-
+    }
 }
